@@ -73,6 +73,17 @@ function menuUsuario(){
 	done
 }
 
+function listarUsuarios(){
+	echo "Listando usuarios"
+	awk -F: '{ print $1}' /etc/passwd
+	echo
+}
+
+function escogerUsuario(){
+	echo "escoga un usuario"
+	read user
+}
+
 #Fin de funciones del usuario
 
 #Funciones de departamento
@@ -135,10 +146,13 @@ function menuAsignacion(){
 				echo "deshabilitar usuario a departamento"
 				;;
 			3)
-				echo "listar usuarios"
+				listarUsuarios
+				echo
 				;;
 			4)
 				echo "listar departamentos"
+				groups
+				echo
 				;;
 			exit)
 				salir
@@ -211,6 +225,9 @@ function menuActividades(){
 		case $opcionActi in
 			1)
 				echo "visualizar uso de memoria del usuario"
+				escogerUsuario
+				top -b -n 1 -u $user
+				echo
 				;;
 			2)
 				echo "visualizar procesos del usuario"
@@ -249,12 +266,17 @@ function menuSistema(){
 		case $opcionSis in
 			1)
 				echo "visualizar uso de memoria del sistema"
+				free
+				echo
 				;;
 			2)
 				echo "visualizar procesos del sistema"
+				top
 				;;
 			3)
 				echo "visualizar archivos del sistema"
+				ls -a
+				echo
 				;;
 			exit)
 				salir
