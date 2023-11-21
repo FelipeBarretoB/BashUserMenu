@@ -300,7 +300,7 @@ function salir(){
 }
 
 function main (){
-	echo "Proyecto por Gabriel Delgado, Juan Manuel Palta y Felipe Barreto"
+	echo "Proyecto por Gabriel Delgado, Juan Manuel Palta, Arturo Diaz y Felipe Barreto"
 	echo "bienvenido al menu"
 	opcion=""
 	while [ "$opcion" != "exit" ]; do
