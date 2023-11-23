@@ -1,3 +1,5 @@
+USERS_DB='db/usuarios.txt'
+DEPTO_DB='db/departamentos.txt'
 function menuPrincipal(){
 	echo "presiona 1 para opciones de usuario"
 	echo "presiona 2 para opciones de departamento"
@@ -50,10 +52,10 @@ function menuUsuario(){
 		read -p "Seleccione una opcion: " opcionUser
 		case $opcionUser in
 			1)
-				echo "crear usuario"
+				crearUsuario
 				;;
 			2)
-				echo "deshabilitar usuario"
+				deshabilitarUsuario
 				;;
 			3)
 				echo "Modificar usuario"
@@ -71,6 +73,35 @@ function menuUsuario(){
 		esac
 		echo
 	done
+}
+
+function crearUsuario(){
+  echo "Creando usuario"
+  read -p "Ingrese el nombre del usuario: " nombre
+  # Verificar si el usuario ya existe
+    if grep -q "^$nombre:" "$USERS_DB"; then
+        echo "El usuario ya existe."
+    else
+        # Crear el usuario y almacenar en el archivo
+        useradd "$nombre"
+        echo "$nombre:activo" >> "$USERS_DB"
+        echo "Usuario creado con éxito."
+    fi
+}
+
+function deshabilitarUsuario(){
+  echo "Deshabilitando usuario"
+  read -p "Ingrese el nombre del usuario: " nombre
+  # Verificar si el usuario existe
+    if grep -q "^$nombre:" "$USERS_DB"; then
+        # Deshabilitar el usuario y almacenar en el archivo
+        deluser --remove-home "$nombre"
+        # Deshabilitar el usuario cambiando su estado a inactivo"
+        awk -v nombre="$nombre" 'BEGIN {FS=OFS=":"} {if ($1 == nombre && $2 == "activo") $2 = "inactivo"} 1' "$USERS_DB" > tmpfile && mv tmpfile "$USERS_DB"
+        echo "Usuario deshabilitado con éxito."
+    else
+        echo "El usuario no existe."
+    fi
 }
 
 function listarUsuarios(){
@@ -100,7 +131,7 @@ function menuDepartamento(){
 		read -p "Seleccione una opcion: " opcionDepa
 		case $opcionDepa in
 			1)
-				echo "crear depa"
+				crearDepartamento
 				;;
 			2)
 				echo "deshabilitar departamento"
@@ -126,6 +157,35 @@ function menuDepartamento(){
 		esac
 		echo
 	done
+}
+
+function crearDepartamento(){
+  echo "Creando departamento"
+  read -p "Ingrese el nombre del departamento: " nombre
+  # Verificar si el departamento ya existe
+  if grep -q "^$nombre:" "$DEPTO_DB"; then
+    echo "El departamento ya existe."
+  else
+    # Crear el departamento y almacenar en el archivo
+    groupadd "$nombre"
+    echo "$nombre:activo" >> "$DEPTO_DB"
+    echo "Departamento creado con éxito."
+  fi
+}
+
+function deshabilitarDepartamento(){
+  echo "Deshabilitando departamento"
+  read -p "Ingrese el nombre del departamento: " nombre
+  # Verificar si el departamento existe
+  if grep -q "^$nombre:" "$DEPTO_DB"; then
+    # Deshabilitar el departamento y almacenar en el archivo
+    groupdel "$nombre"
+    # Deshabilitar el departamento cambiando su estado a inactivo"
+    awk -v nombre="$nombre" 'BEGIN {FS=OFS=":"} {if ($1 == nombre && $2 == "activo") $2 = "inactivo"} 1' "$DEPTO_DB" > tmpfile && mv tmpfile "$DEPTO_DB"
+    echo "Departamento deshabilitado con éxito."
+  else
+    echo "El departamento no existe."
+  fi
 }
 
 function menuAsignacion(){
@@ -295,13 +355,13 @@ function menuSistema(){
 #fin de funciones de gestion del sistema
 
 function salir(){
-	echo "saliendo"
+	echo "Saliendo"
 	exit 0
 }
 
 function main (){
 	echo "Proyecto por Gabriel Delgado, Juan Manuel Palta, Arturo Diaz y Felipe Barreto"
-	echo "bienvenido al menu"
+	echo "Bienvenido al menu"
 	opcion=""
 	while [ "$opcion" != "exit" ]; do
 		menuPrincipal
