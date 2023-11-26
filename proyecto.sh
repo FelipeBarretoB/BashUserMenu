@@ -1,5 +1,4 @@
-USERS_DB='db/usuarios.txt'
-DEPTO_DB='db/departamentos.txt'
+
 function menuPrincipal(){
 	echo "presiona 1 para opciones de usuario"
 	echo "presiona 2 para opciones de departamento"
@@ -105,14 +104,25 @@ function deshabilitarUsuario(){
 }
 
 function listarUsuarios(){
-	echo "Listando usuarios"
-	awk -F: '{ print $1}' /etc/passwd
 	echo
+	echo "Listando usuarios"
+	#imprimir si el usuario esta activo 
+	awk -F: '$2 == "activo" {print $1}' ./db/usuarios.txt
+	
 }
 
 function escogerUsuario(){
 	echo "escoga un usuario"
+	listarUsuarios
 	read user
+	#verificar si el usuario existe
+	if grep -q "^$user:" "$USERS_DB"; then
+		echo "Se escogio el usuario: $user"
+	else
+		echo "El usuario $user no existe"
+		echo "Escoga otro usuario"
+		escogerUsuario
+	fi
 }
 
 #Fin de funciones del usuario
@@ -134,7 +144,7 @@ function menuDepartamento(){
 				crearDepartamento
 				;;
 			2)
-				echo "deshabilitar departamento"
+				deshabilitarDepartamento
 				;;
 			3)
 				echo "modificar departamento"
@@ -200,18 +210,18 @@ function menuAsignacion(){
 		read -p "Seleccione una opcion: " opcionAsig
 		case $opcionAsig in
 			1)
-				echo "asignar usuario a departamento"
+				AsignarUsuario
 				;;
 			2)
-				echo "deshabilitar usuario a departamento"
+				desasignarUsuarioDeDepartamento
+				echo
 				;;
 			3)
 				listarUsuarios
 				echo
 				;;
 			4)
-				echo "listar departamentos"
-				groups
+				listarDepartamentos
 				echo
 				;;
 			exit)
@@ -228,6 +238,80 @@ function menuAsignacion(){
 		echo
 	done
 }
+
+function listarDepartamentos(){
+	echo
+	echo "Listando departamentos"
+	#imprimir si el usuario esta activo 
+	awk -F: '$2 == "activo" {print $1}' ./db/departamentos.txt
+	
+}
+
+function elegirDepartamento(){
+	#TODO mirar caso donde no existen departamentos
+	echo "escoga un departamento"
+	listarDepartamentos
+	read depa
+	#verificar si el usuario existe
+	if grep -q "^$depa:" "$DEPTO_DB"; then
+		echo "Se escogio el departamento: $depa"
+	else
+		echo "El departamento $depa no existe"
+		echo "Escoga otro departamento"
+		elegirDepartamento
+	fi
+}
+
+function AsignarUsuario(){
+	echo "asignar usuario a departamento"
+	escogerUsuario
+	elegirDepartamento
+	usermod -a -G $depa $user
+	echo "usuario $user asignado al departamento $depa"
+	#añadir :depatamento al archivo de usuarios
+	awk -v nombre="$user" -v departamento="$depa" 'BEGIN {FS=OFS=":"} {if ($1 == nombre) $3 = departamento} 1' "$USERS_DB" > tmpfile && mv tmpfile "$USERS_DB"
+	
+}
+
+function listarUsuarioDelDepartamento(){
+	echo "listando usuarios del departamento $depa"
+	usuariosEnDepo=$(awk -F: '$3 == "'$depa'" {print $1}' ./db/usuarios.txt)
+	echo "$usuariosEnDepo"
+	#verificar si hay usuarios en el departamento
+	if [ -z "$usuariosEnDepo" ]; then
+		echo "no hay usuarios en el departamento $depa"
+	else
+		escogerUsuarioDelDepartamento
+	fi
+	
+}
+
+function escogerUsuarioDelDepartamento(){
+	echo "escoja un usuario del departamento $depa"
+	read user
+	#verificar si el usuario existe
+	if echo "$usuariosEnDepo" | grep -q "^$user"; then
+		echo "Se escogio el usuario: $user"
+		#desasignar usuario del departamento
+		gpasswd -d $user $depa
+		awk -v nombre="$user" -v departamento="$depa" 'BEGIN {FS=OFS=":"} {if ($1 == nombre) $3 = ""} 1' "$USERS_DB" > tmpfile && mv tmpfile "$USERS_DB"
+	else
+		echo "El usuario $user no existe en este departamento"
+		echo "Escoga otro usuario"
+		escogerUsuarioDelDepartamento
+	fi
+}
+
+function desasignarUsuarioDeDepartamento(){
+	echo "desasignar usuario de departamento"
+	#elegir un departamento
+	elegirDepartamento
+	#listar usuarios del departamento
+	listarUsuarioDelDepartamento
+	#escoger un usuario del departamento
+	
+}
+
 
 #fin de funciones del departamento
 
@@ -354,6 +438,63 @@ function menuSistema(){
 
 #fin de funciones de gestion del sistema
 
+function onStartUp(){
+	echo "Iniciando el programa"
+	if [ ! -d db ]; then
+		echo "Creando carpeta db"
+		mkdir db
+		cd db
+		touch usuarios.txt
+		touch departamentos.txt
+	else
+		echo "La carpeta db ya existe"
+		#verificar si los archivos existen
+		if [ ! -f db/usuarios.txt ]; then
+			echo "Creando archivo usuarios.txt"
+			touch db/usuarios.txt
+		else
+			echo "El archivo usuarios.txt ya existe"
+		fi
+
+		if [ ! -f db/departamentos.txt ]; then
+			echo "Creando archivo departamentos.txt"
+			touch db/departamentos.txt
+		else
+			echo "El archivo departamentos.txt ya existe"
+		fi
+
+		#verificar si los grupos existen del archivo departamentos.txt
+		while IFS=: read -r nombre estado; do
+			if [ "$estado" == "activo" ] && grep -q "^$nombre:" /etc/group; then
+				echo "El grupo $nombre ya existe"
+
+			elif [ "$estado" == "inactivo" ]; then
+				echo "El grupo $nombre esta deshabilitando"
+			else
+				echo "Creando grupo $nombre"
+				groupadd "$nombre"
+			fi
+			echo
+		done < db/departamentos.txt
+
+		#verificar si los usuarios existen del archivo usuarios.txt
+		while IFS=: read -r nombre estado; do
+			if [ "$estado" == "activo" ] && grep -q "^$nombre:" /etc/passwd; then
+				echo "El usuario $nombre ya existe"
+			elif [ "$estado" == "inactivo" ]; then
+				echo "El usuario $nombre esta deshabilitando"
+			else
+				echo "Creando usuario $nombre"
+				useradd "$nombre"
+			fi
+			echo
+		done < db/usuarios.txt
+	fi
+
+	USERS_DB='db/usuarios.txt'
+	DEPTO_DB='db/departamentos.txt'
+}
+
 function salir(){
 	echo "Saliendo"
 	exit 0
@@ -361,6 +502,9 @@ function salir(){
 
 function main (){
 	echo "Proyecto por Gabriel Delgado, Juan Manuel Palta, Arturo Diaz y Felipe Barreto"
+	echo 
+	onStartUp
+	echo
 	echo "Bienvenido al menu"
 	opcion=""
 	while [ "$opcion" != "exit" ]; do
