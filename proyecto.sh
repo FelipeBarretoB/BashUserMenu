@@ -47,6 +47,7 @@ function menuUsuario(){
 		echo "Presione 1 para crear usuario"
 		echo "presione 2 para deshabilitar un usuario"
 		echo "Presione 3 para modificar un usuario"
+		echo "Presione 4 para listar usuarios"
 		echo "escriba atras para volver al menu principal"
 		read -p "Seleccione una opcion: " opcionUser
 		case $opcionUser in
@@ -57,7 +58,11 @@ function menuUsuario(){
 				deshabilitarUsuario
 				;;
 			3)
+				#TODO no se que va aqui
 				echo "Modificar usuario"
+				;;
+			4)
+				listarUsuarios
 				;;
 			exit)
 				salir
@@ -74,6 +79,7 @@ function menuUsuario(){
 	done
 }
 
+#funciona
 function crearUsuario(){
   echo "Creando usuario"
   read -p "Ingrese el nombre del usuario: " nombre
@@ -83,11 +89,11 @@ function crearUsuario(){
     else
         # Crear el usuario y almacenar en el archivo
         useradd "$nombre"
-        echo "$nombre:activo" >> "$USERS_DB"
+        echo "$nombre:activo:" >> "$USERS_DB"
         echo "Usuario creado con éxito."
     fi
 }
-
+#funciona
 function deshabilitarUsuario(){
   echo "Deshabilitando usuario"
   read -p "Ingrese el nombre del usuario: " nombre
@@ -103,6 +109,7 @@ function deshabilitarUsuario(){
     fi
 }
 
+#funciona
 function listarUsuarios(){
 	echo
 	echo "Listando usuarios"
@@ -110,7 +117,7 @@ function listarUsuarios(){
 	awk -F: '$2 == "activo" {print $1}' ./db/usuarios.txt
 	
 }
-
+#funciona
 function escogerUsuario(){
 	echo "escoga un usuario"
 	listarUsuarios
@@ -123,6 +130,11 @@ function escogerUsuario(){
 		echo "Escoga otro usuario"
 		escogerUsuario
 	fi
+}
+
+#metodo que retorna true si un usuario ya esta en un departamento
+function usuarioEnDepartamento(){
+	awk -F: '$1 == "'$user'" && $3 != "" {print "true"; exit}' "$USERS_DB"
 }
 
 #Fin de funciones del usuario
@@ -168,7 +180,7 @@ function menuDepartamento(){
 		echo
 	done
 }
-
+#funciona
 function crearDepartamento(){
   echo "Creando departamento"
   read -p "Ingrese el nombre del departamento: " nombre
@@ -182,7 +194,7 @@ function crearDepartamento(){
     echo "Departamento creado con éxito."
   fi
 }
-
+#funciona
 function deshabilitarDepartamento(){
   echo "Deshabilitando departamento"
   read -p "Ingrese el nombre del departamento: " nombre
@@ -192,6 +204,8 @@ function deshabilitarDepartamento(){
     groupdel "$nombre"
     # Deshabilitar el departamento cambiando su estado a inactivo"
     awk -v nombre="$nombre" 'BEGIN {FS=OFS=":"} {if ($1 == nombre && $2 == "activo") $2 = "inactivo"} 1' "$DEPTO_DB" > tmpfile && mv tmpfile "$DEPTO_DB"
+	# Deshabilitar el departamento de los usuarios
+	awk -v nombre="$nombre" 'BEGIN {FS=OFS=":"} {if ($3 == nombre) $3 = ""} 1' "$USERS_DB" > tmpfile && mv tmpfile "$USERS_DB"
     echo "Departamento deshabilitado con éxito."
   else
     echo "El departamento no existe."
@@ -206,6 +220,7 @@ function menuAsignacion(){
 		echo "Presione 2 para desasignar usuario a departamento"
 		echo "Presione 3 para listar usuarios"
 		echo "Presione 4 para listar departamentos"
+		echo "Presione 5 para listar usuarios de un departamento"
 		echo "Escriba atras para volver al menu de departamentos"
 		read -p "Seleccione una opcion: " opcionAsig
 		case $opcionAsig in
@@ -224,6 +239,9 @@ function menuAsignacion(){
 				listarDepartamentos
 				echo
 				;;
+			5)
+				listarUsuarioDelDepartamento
+				;;
 			exit)
 				salir
 				;;
@@ -238,7 +256,7 @@ function menuAsignacion(){
 		echo
 	done
 }
-
+#funciona
 function listarDepartamentos(){
 	echo
 	echo "Listando departamentos"
@@ -246,7 +264,7 @@ function listarDepartamentos(){
 	awk -F: '$2 == "activo" {print $1}' ./db/departamentos.txt
 	
 }
-
+#funciona
 function elegirDepartamento(){
 	#TODO mirar caso donde no existen departamentos
 	echo "escoga un departamento"
@@ -261,19 +279,27 @@ function elegirDepartamento(){
 		elegirDepartamento
 	fi
 }
-
+#funciona
 function AsignarUsuario(){
 	echo "asignar usuario a departamento"
 	escogerUsuario
-	elegirDepartamento
-	usermod -a -G $depa $user
-	echo "usuario $user asignado al departamento $depa"
-	#añadir :depatamento al archivo de usuarios
-	awk -v nombre="$user" -v departamento="$depa" 'BEGIN {FS=OFS=":"} {if ($1 == nombre) $3 = departamento} 1' "$USERS_DB" > tmpfile && mv tmpfile "$USERS_DB"
+	#verificar si el usuario ya esta en un departamento
+	if [ "$(usuarioEnDepartamento)" == "true" ]; then
+		echo "El usuario $user ya esta en un departamento"
+		echo "Escoga otro usuario"
+		AsignarUsuario
+	else
+		elegirDepartamento
+		usermod -a -G $depa $user
+		echo "usuario $user asignado al departamento $depa"
+		#añadir :depatamento al archivo de usuarios
+		awk -v nombre="$user" -v departamento="$depa" 'BEGIN {FS=OFS=":"} {if ($1 == nombre) $3 = departamento} 1' "$USERS_DB" > tmpfile && mv tmpfile "$USERS_DB"
+	
+	fi
 	
 }
-
-function listarUsuarioDelDepartamento(){
+#funciona
+function listarUsuarioDelDepartamentoParaEscogerUsuario(){
 	echo "listando usuarios del departamento $depa"
 	usuariosEnDepo=$(awk -F: '$3 == "'$depa'" {print $1}' ./db/usuarios.txt)
 	echo "$usuariosEnDepo"
@@ -282,6 +308,19 @@ function listarUsuarioDelDepartamento(){
 		echo "no hay usuarios en el departamento $depa"
 	else
 		escogerUsuarioDelDepartamento
+	fi
+	
+}
+
+function listarUsuarioDelDepartamento(){
+	elegirDepartamento
+	echo "listando usuarios del departamento $depa"
+	usuariosEnDepo=$(awk -F: '$3 == "'$depa'" {print $1}' ./db/usuarios.txt)
+	#verificar si hay usuarios en el departamento
+	if [ -z "$usuariosEnDepo" ]; then
+		echo "no hay usuarios en el departamento $depa"
+	else
+		echo "$usuariosEnDepo"
 	fi
 	
 }
@@ -307,7 +346,7 @@ function desasignarUsuarioDeDepartamento(){
 	#elegir un departamento
 	elegirDepartamento
 	#listar usuarios del departamento
-	listarUsuarioDelDepartamento
+	listarUsuarioDelDepartamentoParaEscogerUsuario
 	#escoger un usuario del departamento
 	
 }
@@ -478,15 +517,19 @@ function onStartUp(){
 		done < db/departamentos.txt
 
 		#verificar si los usuarios existen del archivo usuarios.txt
-		while IFS=: read -r nombre estado; do
-			if [ "$estado" == "activo" ] && grep -q "^$nombre:" /etc/passwd; then
+		while IFS=: read -r nombre estado departamento; do
+			if [ "$estado" == "activo" ] && getent passwd "$nombre" &>/dev/null; then
 				echo "El usuario $nombre ya existe"
 			elif [ "$estado" == "inactivo" ]; then
 				echo "El usuario $nombre esta deshabilitando"
 			else
 				echo "Creando usuario $nombre"
 				useradd "$nombre"
+				#agregar usuario a su departamento
 			fi
+				if [ ! -z "$departamento" ] && [ "$estado" == "activo" ]; then
+					usermod -a -G $departamento $nombre
+				fi
 			echo
 		done < db/usuarios.txt
 	fi

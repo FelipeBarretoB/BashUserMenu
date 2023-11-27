@@ -1,3 +1,4 @@
 juan:activo:
 example:activo:
 pedro:inactivo:
+felipe:activo:finanzas
