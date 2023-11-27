@@ -414,9 +414,14 @@ function menuActividades(){
 				;;
 			2)
 				echo "visualizar procesos del usuario"
+				escogerUsuario
+				ps -u $user
+				echo
 				;;
 			3)
 				echo "visualizar archivos del usuario"
+				escogerUsuario
+				find /home -user $user -ls
 				;;
 			exit)
 				salir
