@@ -58,8 +58,8 @@ function menuUsuario(){
 				deshabilitarUsuario
 				;;
 			3)
-				#TODO no se que va aqui
-				echo "Modificar usuario"
+        clear
+				menuModificarUsuario
 				;;
 			4)
 				listarUsuarios
@@ -70,6 +70,32 @@ function menuUsuario(){
 			atras)
 				clear
 				echo "Saliendo del menu de usuario"
+				;;
+			*)
+				echo "opcion no valida"
+				;;
+		esac
+		echo
+	done
+}
+
+function menuModificarUsuario(){
+  echo "Bienvenido al menu de modificar usuario"
+	opcionUser=""
+	while [ "$opcionUser" != "atras" ]; do
+		echo "presione 1 para cambiar el nombre de usuario"
+		echo "escriba atras para volver al menu principal"
+		read -p "Seleccione una opcion: " opcionUser
+		case $opcionUser in
+			1)
+				cambiarNombreUsuario
+				;;
+			exit)
+				salir
+				;;
+			atras)
+				clear
+				echo "Saliendo del menu de modificar usuario"
 				;;
 			*)
 				echo "opcion no valida"
@@ -132,6 +158,21 @@ function escogerUsuario(){
 	fi
 }
 
+function cambiarNombreUsuario(){
+  escogerUsuario
+  read -p "Ingrese el nuevo nombre del usuario: " nombre
+  # Verificar si el usuario ya existe
+    if grep -q "^$nombre:" "$USERS_DB"; then
+        echo "El usuario ya existe."
+    else
+        # Cambiar el nombre del usuario y almacenar en el archivo
+        usermod -l "$nombre" "$user"
+        # Cambiar el nombre del usuario en el archivo
+        awk -v nombre="$nombre" 'BEGIN {FS=OFS=":"} {if ($1 == "'$user'") $1 = nombre} 1' "$USERS_DB" > tmpfile && mv tmpfile "$USERS_DB"
+        echo "Usuario modificado con éxito."
+    fi
+}
+
 #metodo que retorna true si un usuario ya esta en un departamento
 function usuarioEnDepartamento(){
 	awk -F: '$1 == "'$user'" && $3 != "" {print "true"; exit}' "$USERS_DB"
@@ -159,7 +200,8 @@ function menuDepartamento(){
 				deshabilitarDepartamento
 				;;
 			3)
-				echo "modificar departamento"
+        clear
+				menuModificarDepartamento
 				;;
 			4)
 				#TODO: menu de asignacion de usuarios
@@ -180,6 +222,33 @@ function menuDepartamento(){
 		echo
 	done
 }
+
+function menuModificarDepartamento(){
+  echo "Bienvenido al menu de modificar departamento"
+	opcionDepto=""
+	while [ "$opcionDepto" != "atras" ]; do
+		echo "presione 1 para cambiar el nombre del departamento"
+		echo "escriba atras para volver al menu principal"
+		read -p "Seleccione una opcion: " opcionDepto
+		case $opcionDepto in
+			1)
+				cambiarNombreDepartamento
+				;;
+			exit)
+				salir
+				;;
+			atras)
+				clear
+				echo "Saliendo del menu de modificar departamento"
+				;;
+			*)
+				echo "opcion no valida"
+				;;
+		esac
+		echo
+	done
+}
+
 #funciona
 function crearDepartamento(){
   echo "Creando departamento"
@@ -209,6 +278,24 @@ function deshabilitarDepartamento(){
     echo "Departamento deshabilitado con éxito."
   else
     echo "El departamento no existe."
+  fi
+}
+
+function cambiarNombreDepartamento(){
+  elegirDepartamento
+  read -p "Ingrese el nuevo nombre del departamento: " nombre
+  # Verificar si el departamento ya existe
+  if grep -q "^$nombre:" "$DEPTO_DB"; then
+    echo "El departamento ya existe elija otro nombre."
+  else
+    # Cambiar el nombre del departamento y almacenar en el archivo
+    groupmod -n "$nombre" "$depa"
+    # Cambiar el nombre del departamento en el archivo
+    awk -v nombre="$nombre" 'BEGIN {FS=OFS=":"} {if ($1 == "'$depa'") $1 = nombre} 1' "$DEPTO_DB" > tmpfile && mv tmpfile "$DEPTO_DB"
+    # Cambiar el nombre del departamento de los usuarios
+    awk -v nombre="$nombre" 'BEGIN {FS=OFS=":"} {if ($3 == "'$depa'") $3 = nombre} 1' "$USERS_DB" > tmpfile && mv tmpfile "$USERS_DB"
+    
+    echo "Departamento modificado con éxito."
   fi
 }
 

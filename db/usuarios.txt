@@ -1,4 +1,5 @@
-juan:activo:
+palta:activo:
 example:activo:
 pedro:inactivo:
 felipe:activo:finanzas
+prueba:activo:contabilidad
