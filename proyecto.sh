@@ -200,10 +200,11 @@ function menuDepartamento(){
 				deshabilitarDepartamento
 				;;
 			3)
-        clear
+        		clear
 				menuModificarDepartamento
 				;;
 			4)
+				clear
 				#TODO: menu de asignacion de usuarios
 				echo "Menu de asignacion de usuarios"
 				menuAsignacion
@@ -636,6 +637,7 @@ function salir(){
 }
 
 function main (){
+	clear
 	echo "Proyecto por Gabriel Delgado, Juan Manuel Palta, Arturo Diaz y Felipe Barreto"
 	echo 
 	onStartUp
