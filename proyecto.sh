@@ -31,6 +31,7 @@ function menuPrincipal(){
 			menuSistema
 			;;
 		exit)
+		  detenerMonitoreoMemoria
 			salir
 			;;
 		*)
@@ -200,11 +201,10 @@ function menuDepartamento(){
 				deshabilitarDepartamento
 				;;
 			3)
-        		clear
+        clear
 				menuModificarDepartamento
 				;;
 			4)
-				clear
 				#TODO: menu de asignacion de usuarios
 				echo "Menu de asignacion de usuarios"
 				menuAsignacion
@@ -568,6 +568,28 @@ function menuSistema(){
 	done 
 }
 
+function iniciarMonitoreoMemoria(){
+    # Esta función crea una tarea de cron que ejecuta la verificación de memoria cada 1 minuto
+    (crontab -l 2>/dev/null; echo "* * * * * $PWD/$0 verificarMemoria >> $PWD/verificacion_memoria.log 2>&1") | crontab -
+    echo "Tarea de cron para verificar memoria cada 1 minuto creada."
+}
+
+function detenerMonitoreoMemoria(){
+    # Esta función elimina la tarea de cron asociada al script
+    crontab -r
+    echo "Tarea de cron para verificar memoria eliminada."
+}
+
+function verificarMemoria(){
+    echo "Verificando memoria"
+    uso_memoria=$(free | awk 'FNR == 2 {print $3/$2 * 100}')
+
+    if (( $(echo "$uso_memoria > 20" | bc -l) )); then
+        echo "¡Alerta! El uso de memoria ha superado el 20%."
+        # Aquí puedes agregar código adicional para enviar notificaciones.
+    fi
+}
+
 #fin de funciones de gestion del sistema
 
 function onStartUp(){
@@ -637,7 +659,7 @@ function salir(){
 }
 
 function main (){
-	clear
+  iniciarMonitoreoMemoria
 	echo "Proyecto por Gabriel Delgado, Juan Manuel Palta, Arturo Diaz y Felipe Barreto"
 	echo 
 	onStartUp
