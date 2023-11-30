@@ -1,3 +1,8 @@
-palta:activo:Juan:Palta
-usuario:activo:manuel:cortes
-u3:activo:usuario:3
+palta:activo:Software
+example:activo:
+pedro:inactivo:
+felipe:activo:
+prueba:activo:contabilidad
+arturo2:activo:contabilidad
+Gabriel:activo:
+Mariana:activo:Software
