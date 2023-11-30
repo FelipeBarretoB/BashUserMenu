@@ -1,6 +1,7 @@
 palta:activo:
 example:activo:
 pedro:inactivo:
-felipe:activo:finanzas
+felipe:activo:
 prueba:activo:contabilidad
-arturo:activo:
+arturo2:activo:contabilidad
+gabriel:inactivo:NuevoGabriel:activo:

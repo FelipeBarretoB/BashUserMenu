@@ -118,6 +118,8 @@ function crearUsuario(){
         useradd "$nombre"
         echo "$nombre:activo:" >> "$USERS_DB"
         echo "Usuario creado con éxito."
+		logCreacionModificacion "Creacion" "usuario" "Se creo el usuario $nombre"
+		echo "$nombre:activo:" >> "$USERS_DB"
     fi
 }
 #funciona
@@ -131,6 +133,7 @@ function deshabilitarUsuario(){
         # Deshabilitar el usuario cambiando su estado a inactivo"
         awk -v nombre="$nombre" 'BEGIN {FS=OFS=":"} {if ($1 == nombre && $2 == "activo") $2 = "inactivo"} 1' "$USERS_DB" > tmpfile && mv tmpfile "$USERS_DB"
         echo "Usuario deshabilitado con éxito."
+	logCreacionModificacion "Modificacion" "usuario" "Se deshabilito el usuario $nombre"
     else
         echo "El usuario no existe."
     fi
@@ -165,17 +168,20 @@ function cambiarNombreUsuario(){
   # Verificar si el usuario ya existe
     if grep -q "^$nombre:" "$USERS_DB"; then
         echo "El usuario ya existe."
+	logCreacionModificacon "Modificacion" "usuario" "hubo un error al intentar modificar el nombre de $user"
     else
         # Cambiar el nombre del usuario y almacenar en el archivo
         usermod -l "$nombre" "$user"
         # Cambiar el nombre del usuario en el archivo
         awk -v nombre="$nombre" 'BEGIN {FS=OFS=":"} {if ($1 == "'$user'") $1 = nombre} 1' "$USERS_DB" > tmpfile && mv tmpfile "$USERS_DB"
         echo "Usuario modificado con éxito."
+	logCreacionModificacion "Modificacion" "usuario" "Se cambio el nombre de $user a $nombre"
     fi
 }
 
 #metodo que retorna true si un usuario ya esta en un departamento
 function usuarioEnDepartamento(){
+	logAccionesSeguridad "Verificacion de usuario en departamento" "Usuario: $user"
 	awk -F: '$1 == "'$user'" && $3 != "" {print "true"; exit}' "$USERS_DB"
 }
 
@@ -262,6 +268,7 @@ function crearDepartamento(){
     groupadd "$nombre"
     echo "$nombre:activo" >> "$DEPTO_DB"
     echo "Departamento creado con éxito."
+    logCreacionModificacion "Creacion" "departamento" "Se creo el departamento $nombre"
   fi
 }
 #funciona
@@ -277,6 +284,7 @@ function deshabilitarDepartamento(){
 	# Deshabilitar el departamento de los usuarios
 	awk -v nombre="$nombre" 'BEGIN {FS=OFS=":"} {if ($3 == nombre) $3 = ""} 1' "$USERS_DB" > tmpfile && mv tmpfile "$USERS_DB"
     echo "Departamento deshabilitado con éxito."
+    logCreacionModificacion "Modificacion" "departamento" "Se deshabilito el departamento $nombre"
   else
     echo "El departamento no existe."
   fi
@@ -288,6 +296,7 @@ function cambiarNombreDepartamento(){
   # Verificar si el departamento ya existe
   if grep -q "^$nombre:" "$DEPTO_DB"; then
     echo "El departamento ya existe elija otro nombre."
+    logCreacionModificacion "Modificacion" "departamento" "Se intento cambiar el nombre del departamento $depa"
   else
     # Cambiar el nombre del departamento y almacenar en el archivo
     groupmod -n "$nombre" "$depa"
@@ -297,6 +306,7 @@ function cambiarNombreDepartamento(){
     awk -v nombre="$nombre" 'BEGIN {FS=OFS=":"} {if ($3 == "'$depa'") $3 = nombre} 1' "$USERS_DB" > tmpfile && mv tmpfile "$USERS_DB"
     
     echo "Departamento modificado con éxito."
+    logCreacionModificacion "Modificacion" "departamento" "Se cambio el nombre del departamento de $depa a $nombre"
   fi
 }
 
@@ -382,7 +392,7 @@ function AsignarUsuario(){
 		echo "usuario $user asignado al departamento $depa"
 		#añadir :depatamento al archivo de usuarios
 		awk -v nombre="$user" -v departamento="$depa" 'BEGIN {FS=OFS=":"} {if ($1 == nombre) $3 = departamento} 1' "$USERS_DB" > tmpfile && mv tmpfile "$USERS_DB"
-	
+		logCreacionModificacion "Modificacion" "usuario" "Se añade usuario $user a departamento $depa"
 	fi
 	
 }
@@ -443,6 +453,81 @@ function desasignarUsuarioDeDepartamento(){
 #fin de funciones del departamento
 
 #Funciones de log
+function logInicioSesion(){
+        
+        echo "$(date): Inicio de sesion - Usuario: $1 - Estado: $2 - Detalle: $3" >> inicio_sesion.log
+}
+ 
+function logCreacionModificacion(){
+        echo "$(date): $1 de $2 - Detalles: $3" >> creacion_modificacion.log
+}
+ 
+function logAccionesSeguridad(){
+        echo "$(date): Accion de seguridad - Evento: $1 - Detalles: $2" >> acciones_seguridad.log
+}
+
+function menuInfoLogs() {
+	opcionInfoLog=""
+	while [ "$opcionInfoLog" != "atras" ]; do
+		echo "Presiona 1 para ver todos los logs de Inicio de sesion"
+       	 	echo "Presiona 2 para ver todos los logs de creacion/modificacion"
+        	echo "Presiona 3 para ver todos los logs de seguridad"
+	        echo "Escriba atras para volver al menu anterior"
+		read -p "Elige tu opcion " opcionInfoLog
+		case $opcionInfoLog in
+			1)
+				clear
+				echo "------ LOGS DE INICIO DE SESION ------"	
+				cat inicio_sesion.log
+				echo "------ FIN LOGS DE INICIO DE SESION ------"
+				;;
+			2)
+				clear
+				echo "------ LOGS DE CREACION/MODIFICACION ------"	
+				cat creacion_modificacion.log
+				echo "------ FIN LOGS DE CREACION/MODIFICACION ------"
+				;;
+			3)
+				clear
+				echo "------ LOGS DE SEGURIDAD ------"	
+				cat acciones_seguridad.log
+				echo "------ FIN LOGS SEGURIDAD ------"
+				;;
+
+			exit)
+				clear
+				echo "Saliendo del programa"
+				salir
+				;;
+			atras)
+				clear
+				echo "Regresando a menu anterior"
+				;;
+			*)
+				clear
+				echo "Esta opcion no esta disponible"
+				;;
+		esac
+		echo
+	done 
+}
+
+function estadisticasLogs() {
+	echo "--- ESTADISTICAS LOGS INICIO SESION ---"
+	echo "Numero de inicios de sesion: $(wc -l inicio_sesion.log)"
+	echo "--- FIN ESTADISTICAS LOGS INICIO SESION ---"
+
+	echo "--- ESTADISTICAS LOGS DE CREACION/MODIFICACION ---"
+	echo "Numero total de eventos: $(wc -l creacion_modificacion.log)"
+	echo "Numero de eventos de creacion: $(grep -c "Creacion" creacion_modificacion.log)"
+	echo "Numero de eventos de modificacion: $(grep -c "Modificacion" creacion_modificacion.log)"
+	echo "--- FIN ESTADISTICAS LOGS DE CREACION/MODIFICACION ---"
+
+	echo "--- ESTADISTICAS LOGS DE SEGURIDAD ---"
+	echo "Numero de logs de seguridad $(wc -l acciones_seguridad.log)"
+	echo "--- FIN ESTADISTICAS LOGS DE SEGURIDAD ---"
+}
+
 
 function menuLog(){
 	echo "bienvenido al menu de log"
@@ -450,16 +535,37 @@ function menuLog(){
 
 	while [ "$opcionLog" != "atras" ]; do
 		#TODO: agregar opciones de log 
-		echo "presione 1 para ver log 2"
-		echo "presione 2 para ver log 1"
+		echo "presione 1 para ver logs de inicio de sesion por usuario"
+		echo "presione 2 para ver log de actividad de usuario"
+		echo "presione 3 para ver logs de seguridad por actividad"
+		echo "presione 4 para ver un log por completo"
+		echo "presione 5 para ver estadisticas de logs"
 		echo "Esciba atras para volver al menu principal"
 		read -p "Seleccione una opcion: " opcionLog
 		case $opcionLog in
 			1)
-				echo "log 1"
+				echo "--- LOG DE INICIO DE SESION ---"
+				escogerUsuario
+				grep "$user" inicio_sesion.log
 				;;
 			2)
-				echo "log 2"
+				echo "--- LOG DE ACTIVIDAD DE USUARIO ---"
+				escogerUsuario
+				grep "$user" creacion_modificacion.log
+				;;
+			3)
+				echo "--- LOG DE ACCIONES DE SEGURIDAD ---"
+				accion=""
+				read -p "Seleccione una opcion a filtrar" accion
+				grep "$accion" acciones_seguridad.log
+				;;
+			4)
+				echo "--- MENU DE INFORMACION DE LOGS ---"
+				menuInfoLogs
+				;;
+			5)
+				echo "--- ESTADISTICAS DE LOGS ---"
+				estadisticasLogs
 				;;
 			exit)
 				salir
@@ -476,6 +582,8 @@ function menuLog(){
 	done
 
 }
+
+
 
 
 #fin de funciones de log
@@ -663,6 +771,7 @@ function main (){
 	echo "Proyecto por Gabriel Delgado, Juan Manuel Palta, Arturo Diaz y Felipe Barreto"
 	echo 
 	onStartUp
+	logInicioSesion "$(whoami)" "Exito" "Inicio de sesion exitoso"
 	echo
 	echo "Bienvenido al menu"
 	opcion=""

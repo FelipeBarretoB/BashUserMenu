@@ -1,4 +1,4 @@
 contabilidad:activo
-finanzas:activo
+finanzas:inactivo
 mercadeo:inactivo
-pruebaDepo:activo
+pruebaDepo3:activo
