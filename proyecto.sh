@@ -151,14 +151,15 @@ function escogerUsuario(){
 	echo "escoja un usuario: "
 	listarUsuarios
 	read user
-	#verificar si el usuario existe
-	if grep -q "^$user:" "$USERS_DB"; then
-		echo "Se escogio el usuario: $user"
+	#verificar si el usuario existe y si esta activo
+	if grep -q "^$user:activo" "$USERS_DB"; then
+		echo "El usuario $user esta activo"
 	else
-		echo "El usuario $user no existe"
-		echo "Escoja otro usuario: "
+		echo "El usuario $user esta deshabilitado"
+		echo 
 		escogerUsuario
 	fi
+	
 }
 
 function cambiarNombreUsuario(){
@@ -206,13 +207,13 @@ function menuDepartamento(){
 				deshabilitarDepartamento
 				;;
 			3)
-        clear
+    		    clear
 				menuModificarDepartamento
 				;;
 			4)
-				#TODO: menu de asignacion de usuarios
-				echo "Menu de asignacion de usuarios"
+				clear
 				menuAsignacion
+				
 				;;
 			exit)
 				salir

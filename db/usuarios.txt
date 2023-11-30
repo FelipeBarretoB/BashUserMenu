@@ -1,10 +1,8 @@
-palta:activo:
+palta:activo:Software
 example:activo:
 pedro:inactivo:
 felipe:activo:
 prueba:activo:contabilidad
 arturo2:activo:contabilidad
-gabriel:inactivo:NuevoGabriel:activo:
-Gabriel:activo:
 Gabriel:activo:
 Mariana:activo:Software
