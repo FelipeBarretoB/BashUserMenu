@@ -119,7 +119,6 @@ function crearUsuario(){
         echo "$nombre:activo:" >> "$USERS_DB"
         echo "Usuario creado con éxito."
 		logCreacionModificacion "Creacion" "usuario" "Se creo el usuario $nombre"
-		echo "$nombre:activo:" >> "$USERS_DB"
     fi
 }
 #funciona
@@ -149,7 +148,7 @@ function listarUsuarios(){
 }
 #funciona
 function escogerUsuario(){
-	echo "escoga un usuario"
+	echo "escoja un usuario: "
 	listarUsuarios
 	read user
 	#verificar si el usuario existe
@@ -157,7 +156,7 @@ function escogerUsuario(){
 		echo "Se escogio el usuario: $user"
 	else
 		echo "El usuario $user no existe"
-		echo "Escoga otro usuario"
+		echo "Escoja otro usuario: "
 		escogerUsuario
 	fi
 }
@@ -455,15 +454,15 @@ function desasignarUsuarioDeDepartamento(){
 #Funciones de log
 function logInicioSesion(){
         
-        echo "$(date): Inicio de sesion - Usuario: $1 - Estado: $2 - Detalle: $3" >> inicio_sesion.log
+        echo "$(date)/Inicio de sesion/Usuario-$1/Estado-$2/Detalle-$3" >> inicio_sesion.log
 }
  
 function logCreacionModificacion(){
-        echo "$(date): $1 de $2 - Detalles: $3" >> creacion_modificacion.log
+        echo "$(date)/$1 de $2/Detalles-$3" >> creacion_modificacion.log
 }
  
 function logAccionesSeguridad(){
-        echo "$(date): Accion de seguridad - Evento: $1 - Detalles: $2" >> acciones_seguridad.log
+        echo "$(date)/Accion de seguridad/Evento-$1/Detalles-$2" >> acciones_seguridad.log
 }
 
 function menuInfoLogs() {
@@ -516,16 +515,17 @@ function estadisticasLogs() {
 	echo "--- ESTADISTICAS LOGS INICIO SESION ---"
 	echo "Numero de inicios de sesion: $(wc -l inicio_sesion.log)"
 	echo "--- FIN ESTADISTICAS LOGS INICIO SESION ---"
-
+	echo
 	echo "--- ESTADISTICAS LOGS DE CREACION/MODIFICACION ---"
 	echo "Numero total de eventos: $(wc -l creacion_modificacion.log)"
 	echo "Numero de eventos de creacion: $(grep -c "Creacion" creacion_modificacion.log)"
 	echo "Numero de eventos de modificacion: $(grep -c "Modificacion" creacion_modificacion.log)"
 	echo "--- FIN ESTADISTICAS LOGS DE CREACION/MODIFICACION ---"
-
+	echo
 	echo "--- ESTADISTICAS LOGS DE SEGURIDAD ---"
 	echo "Numero de logs de seguridad $(wc -l acciones_seguridad.log)"
 	echo "--- FIN ESTADISTICAS LOGS DE SEGURIDAD ---"
+	echo
 }
 
 
@@ -547,17 +547,20 @@ function menuLog(){
 				echo "--- LOG DE INICIO DE SESION ---"
 				escogerUsuario
 				grep "$user" inicio_sesion.log
+				echo
 				;;
 			2)
 				echo "--- LOG DE ACTIVIDAD DE USUARIO ---"
 				escogerUsuario
 				grep "$user" creacion_modificacion.log
+				echo
 				;;
 			3)
 				echo "--- LOG DE ACCIONES DE SEGURIDAD ---"
 				accion=""
 				read -p "Seleccione una opcion a filtrar" accion
 				grep "$accion" acciones_seguridad.log
+				echo
 				;;
 			4)
 				echo "--- MENU DE INFORMACION DE LOGS ---"

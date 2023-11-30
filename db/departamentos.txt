@@ -2,3 +2,4 @@ contabilidad:activo
 finanzas:inactivo
 mercadeo:inactivo
 pruebaDepo3:activo
+Software:activo
