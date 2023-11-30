@@ -109,16 +109,21 @@ function menuModificarUsuario(){
 #funciona
 function crearUsuario(){
   echo "Creando usuario"
-  read -p "Ingrese el nombre del usuario: " nombre
+  read -p "Ingrese el nombre de usuario: " nombreUsr
+  read -p "Ingrese el nombre del trabajador: " nombre
+  read -p "Ingrese el apellido: " apellido
   # Verificar si el usuario ya existe
-    if grep -q "^$nombre:" "$USERS_DB"; then
+    if grep -q "^$nombreUsr:" "$USERS_DB"; then
         echo "El usuario ya existe."
     else
         # Crear el usuario y almacenar en el archivo
-        useradd "$nombre"
-        echo "$nombre:activo:" >> "$USERS_DB"
+        useradd "$nombreUsr"
+        # agregar el nombre y apellido del usuario 
+        usermod -c "$nombre $apellido" "$nombreUsr"
+        # Crear el usuario en el archivo
+        echo "$nombreUsr:activo:$nombre:$apellido" >> "$USERS_DB"
         echo "Usuario creado con éxito."
-		logCreacionModificacion "Creacion" "usuario" "Se creo el usuario $nombre"
+		logCreacionModificacion "Creacion" "usuario" "Se creo el usuario $nombreUsr con nombre $nombre $apellido"
     fi
 }
 #funciona
@@ -181,7 +186,7 @@ function cambiarNombreUsuario(){
 #metodo que retorna true si un usuario ya esta en un departamento
 function usuarioEnDepartamento(){
 	logAccionesSeguridad "Verificacion de usuario en departamento" "Usuario: $user"
-	awk -F: '$1 == "'$user'" && $3 != "" {print "true"; exit}' "$USERS_DB"
+	awk -F: '$1 == "'$user'" && $5 != "" {print "true"; exit}' "$USERS_DB"
 }
 
 #Fin de funciones del usuario
@@ -387,10 +392,10 @@ function AsignarUsuario(){
 		AsignarUsuario
 	else
 		elegirDepartamento
-		usermod -a -G $depa $user
+		usermod -a -G $depa $userp
 		echo "usuario $user asignado al departamento $depa"
-		#añadir :depatamento al archivo de usuarios
-		awk -v nombre="$user" -v departamento="$depa" 'BEGIN {FS=OFS=":"} {if ($1 == nombre) $3 = departamento} 1' "$USERS_DB" > tmpfile && mv tmpfile "$USERS_DB"
+		#añadir :departamento al archivo de usuarios
+		awk -v nombre="$user" -v departamento="$depa" 'BEGIN {FS=OFS=":"} {if ($1 == nombre) $5 = departamento} 1' "$USERS_DB" > tmpfile && mv tmpfile "$USERS_DB"
 		logCreacionModificacion "Modificacion" "usuario" "Se añade usuario $user a departamento $depa"
 	fi
 	
@@ -398,7 +403,7 @@ function AsignarUsuario(){
 #funciona
 function listarUsuarioDelDepartamentoParaEscogerUsuario(){
 	echo "listando usuarios del departamento $depa"
-	usuariosEnDepo=$(awk -F: '$3 == "'$depa'" {print $1}' ./db/usuarios.txt)
+	usuariosEnDepo=$(awk -F: '$5 == "'$depa'" {print $1}' ./db/usuarios.txt)
 	echo "$usuariosEnDepo"
 	#verificar si hay usuarios en el departamento
 	if [ -z "$usuariosEnDepo" ]; then
@@ -430,7 +435,7 @@ function escogerUsuarioDelDepartamento(){
 		echo "Se escogio el usuario: $user"
 		#desasignar usuario del departamento
 		gpasswd -d $user $depa
-		awk -v nombre="$user" -v departamento="$depa" 'BEGIN {FS=OFS=":"} {if ($1 == nombre) $3 = ""} 1' "$USERS_DB" > tmpfile && mv tmpfile "$USERS_DB"
+		awk -v nombre="$user" -v departamento="$depa" 'BEGIN {FS=OFS=":"} {if ($1 == nombre) $5 = ""} 1' "$USERS_DB" > tmpfile && mv tmpfile "$USERS_DB"
 	else
 		echo "El usuario $user no existe en este departamento"
 		echo "Escoga otro usuario"
